@@ -94,4 +94,13 @@ ENV/
 # Rope project settings
 .ropeproject
 
+# Submission results
+*.zip
+*.json
+# Ignore hidden files and folders
+.*
+!/.gitignore
+
 # End of https://www.gitignore.io/api/python
+
+
