@@ -2,7 +2,7 @@
 test your agent's strength against a set of known agents using tournament.py
 and include the results in your report.
 """
-INF = 1000.0
+INF = float("inf")
 
 class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
@@ -32,8 +32,8 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    moves = game.get_legal_moves()
-    if len(moves) == 0:
+    own_moves = game.get_legal_moves()
+    if len(own_moves) == 0:
         # terminal state
         if player == game.active_player:
             # player looses
@@ -43,7 +43,8 @@ def custom_score(game, player):
             return INF
     else:
         # We just return the number of moves that we have
-        return float(len(moves))
+        opp_moves = game.get_legal_moves(game.get_opponent(player))
+        return float(len(own_moves) - len(opp_moves))
 
 
 
