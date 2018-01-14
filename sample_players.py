@@ -251,39 +251,71 @@ class HumanPlayer():
 
         return legal_moves[index]
 
+def mark_position(game, move):
+    idx = move[0] + move[1] * game.height
+    game._board_state[idx] = 1
+
+start = None
+end = None
+def t():
+    return 10000
 
 if __name__ == "__main__":
     from isolation import Board
+    from game_agent import *
 
     # create an isolation board (by default 7x7)
-    player1 = RandomPlayer()
+    player1 = MinimaxPlayer()
+    player1 = AlphaBetaPlayer(score_fn=center_score)
+    #player1 = RandomPlayer()
     player2 = GreedyPlayer()
-    game = Board(player1, player2)
+    game = Board(player1, player2, width=9, height=9)
 
     # place player 1 on the board at row 2, column 3, then place player 2 on
     # the board at row 0, column 5; display the resulting board state.  Note
     # that the .apply_move() method changes the calling object in-place.
-    game.apply_move((2, 3))
-    game.apply_move((0, 5))
+
+    import time
+    start = time.time()
+
+    a = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    game.apply_move((3, 4))
+    game.apply_move((4, 5))
+
+    for row in range(game.height):
+        for column in range(game.width):
+            if a[column*game.height + row] == 1:
+                mark_position(game, (row, column))
+
+    # moves = [(2,2), (2,4), (2,6), (3,4), (3,6), (4,1), (4,3), (6,4)]
+    # for move in moves:
+    #     mark_position(game, move)
+
     print(game.to_string())
 
     # players take turns moving on the board, so player1 should be next to move
     assert(player1 == game.active_player)
 
     # get a list of the legal moves available to the active player
-    print(game.get_legal_moves())
+    # print(game.get_legal_moves())
 
     # get a successor of the current state by making a copy of the board and
     # applying a move. Notice that this does NOT change the calling object
     # (unlike .apply_move()).
-    new_game = game.forecast_move((1, 1))
+    #new_game = game.forecast_move((1, 1))
+    best_move = player1.get_move(game, t)
+    new_game = game.forecast_move(best_move)
     assert(new_game.to_string() != game.to_string())
     print("\nOld state:\n{}".format(game.to_string()))
     print("\nNew state:\n{}".format(new_game.to_string()))
 
+
+
+
     # play the remainder of the game automatically -- outcome can be "illegal
     # move", "timeout", or "forfeit"
-    winner, history, outcome = game.play()
+    winner, history, outcome = game.play(time_limit=10000)
     print("\nWinner: {}\nOutcome: {}".format(winner, outcome))
     print(game.to_string())
     print("Move history:\n{!s}".format(history))
+

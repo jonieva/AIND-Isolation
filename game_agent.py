@@ -72,7 +72,15 @@ def custom_score_2(game, player):
         The heuristic value of the current game state to the specified player.
     """
     # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    w, h = game.width / 2., game.height / 2.
+    y, x = game.get_player_location(player)
+    return float((h - y)**2 + (w - x)**2)
 
 
 def custom_score_3(game, player):
@@ -235,56 +243,81 @@ class MinimaxPlayer(IsolationPlayer):
         return best_move
 
 
-    def min_value(self, game_state, depth):
-        """ Return the value for a win (+1) if the game is over,
-        otherwise return the minimum value over all legal child
-        nodes.
+    def min_value(self, game, depth):
         """
+        Return the minimum value that we can calculate in this node.
+        If the node is terminal, return -INF
+        Parameters
+        ----------
+        game : isolation.Board
+            An instance of the Isolation game `Board` class representing the
+            current game state
+
+        depth : int
+            Depth is an integer representing the maximum number of plies to
+            search in the game tree before aborting
+
+        Returns
+        -------
+        float
+            Minimum value obtained
+        """
+
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
         if depth == 0:
             # Stop here
-            return self.score(game_state, self)
+            return self.score(game, self)
 
-        legal_moves = game_state.get_legal_moves()
+        legal_moves = game.get_legal_moves()
         num_moves = len(legal_moves)
         if num_moves == 0:
-            # TERMINAL STATE. EVALUATE
-            return self.score(game_state, self)
+            # Terminal state. Should evaluate to -INF
+            return self.score(game, self)
 
-        min_score = INF
+        v = INF
         for move in legal_moves:
-            new_game = game_state.forecast_move(move)
-            score = self.max_value(new_game, depth-1)
-            if score < min_score:
-                min_score = score
-        return min_score
+            new_game = game.forecast_move(move)
+            v = min(v, self.max_value(new_game, depth-1))
+        return v
 
-    def max_value(self, game_state, depth):
-        """ Return the value for a loss (-1) if the game is over,
-        otherwise return the maximum value over all legal child
-        nodes.
+
+    def max_value(self, game, depth):
+        """
+        Return the maximum value that we can calculate in this node.
+        If the node is terminal, return -INF
+        Parameters
+        ----------
+        game : isolation.Board
+            An instance of the Isolation game `Board` class representing the
+            current game state
+
+        depth : int
+            Depth is an integer representing the maximum number of plies to
+            search in the game tree before aborting
+
+        Returns
+        -------
+        float
+            Maximum value obtained
         """
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
         if depth == 0:
             # Stop here
-            return self.score(game_state, self)
+            return self.score(game, self)
 
-        legal_moves = game_state.get_legal_moves()
+        legal_moves = game.get_legal_moves()
         if len(legal_moves) == 0:
-            # TERMINAL STATE. EVALUATE
-            return self.score(game_state, self)
-        max_score = -INF
+            # Terminal state. Should evaluate to INF
+            return self.score(game, self)
 
+        v = -INF
         for move in legal_moves:
-            new_game = game_state.forecast_move(move)
-            score = self.min_value(new_game, depth-1)
-            if score > max_score:
-                max_score = score
-        return max_score
-
+            new_game = game.forecast_move(move)
+            v = max(v, self.min_value(new_game, depth-1))
+        return v
 
 class AlphaBetaPlayer(IsolationPlayer):
     """Game-playing agent that chooses a move using iterative deepening minimax
@@ -324,10 +357,23 @@ class AlphaBetaPlayer(IsolationPlayer):
         """
         self.time_left = time_left
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        # Initialize the best move so that this function returns something
+        # in case the search fails due to timeout
+        # legal_moves = [(1, 2), (1, 4), (2, 1), (5, 4), (2, 5), (4, 5), (5, 2)]
+        best_move = (-1, -1)
+        try:
+            depth = 1
+            while True:
+                best_move = self.alphabeta(game, depth)
+                depth += 1
+        except SearchTimeout:
+            pass  # Handle any actions required after timeout as needed
 
-    def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
+        # Return the best move from the last completed search iteration
+        return best_move
+
+
+    def alphabeta(self, game, depth, alpha=-INF, beta=INF):
         """Implement depth-limited minimax search with alpha-beta pruning as
         described in the lectures.
 
@@ -375,5 +421,109 @@ class AlphaBetaPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        # We assume that there is not going to be timeout while obtaining the legal moves (there will be a maximum
+        # of four moves anytime)
+        legal_moves = game.get_legal_moves()
+        best_score = -INF
+        best_move = (-1, -1) if len(legal_moves) == 0 else legal_moves[0]
+        for move in legal_moves:
+            score = self.min_value(game.forecast_move(move), depth-1, alpha, beta)
+            if score > best_score:
+                best_move = move
+                best_score = score
+            alpha = max(alpha, best_score)
+        return best_move
+
+
+    def min_value(self, game, depth, alpha, beta):
+        """
+        Return the minimum value that we can calculate in this node.
+        If the node is terminal, return -INF
+        Parameters
+        ----------
+        game : isolation.Board
+            An instance of the Isolation game `Board` class representing the
+            current game state
+
+        depth : int
+            Depth is an integer representing the maximum number of plies to
+            search in the game tree before aborting
+
+        alpha : float
+            Alpha limits the lower bound of search on minimizing layers
+
+        beta : float
+            Beta limits the upper bound of search on maximizing layers
+
+        Returns
+        -------
+        float
+            Minimum value obtained
+        """
+
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+        if depth == 0:
+            # Stop here
+            return self.score(game, self)
+
+        legal_moves = game.get_legal_moves()
+        if len(legal_moves) == 0:
+            # Terminal state. Should evaluate to -INF
+            return self.score(game, self)
+
+        v = INF
+        # try:
+        for move in legal_moves:
+            v = min(v, self.max_value(game.forecast_move(move), depth - 1, alpha, beta))
+            if v <= alpha:
+                return v
+            beta = min(beta, v)
+        return v
+
+    def max_value(self, game, depth, alpha, beta):
+        """
+        Return the maximum value that we can calculate in this node.
+        If the node is terminal, return -INF
+        Parameters
+        ----------
+        game : isolation.Board
+            An instance of the Isolation game `Board` class representing the
+            current game state
+
+        depth : int
+            Depth is an integer representing the maximum number of plies to
+            search in the game tree before aborting
+
+        alpha : float
+            Alpha limits the lower bound of search on minimizing layers
+
+        beta : float
+            Beta limits the upper bound of search on maximizing layers
+
+        Returns
+        -------
+        float
+            Maximum value obtained
+        """
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        if depth == 0:
+            # Stop here
+            return self.score(game, self)
+
+        legal_moves = game.get_legal_moves()
+        # legal_moves = [(3,5), (4,4)]
+        if len(legal_moves) == 0:
+            # Terminal state. Should evaluate to INF
+            return self.score(game, self)
+
+        v = -INF
+        # try:
+        for move in legal_moves:
+            v = max(v, self.min_value(game.forecast_move(move), depth - 1, alpha, beta))
+            if v >= beta:
+                return v
+            alpha = max(alpha, v)
+        return v
