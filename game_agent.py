@@ -8,16 +8,6 @@ class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
     pass
 
-# import json
-# with open("/Users/jonieva/Projects/jorge/udacity/ia/term1/AIND-Isolation/params.txt", 'r') as f:
-#     parameters_dict = json.loads(f.read())
-#     w_my_moves = parameters_dict['w_my_moves']
-#     w_opponent_moves = parameters_dict['w_opponent_moves']
-#     w_center_distance = parameters_dict['w_center_distance']
-#     w_opponent_center_distance = parameters_dict['w_opponent_center_distance']
-#     w_opponent_distance = parameters_dict['w_opponent_distance']
-#     w_chase_opponent_factor = parameters_dict['w_chase_opponent_factor']
-
 
 def custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -72,22 +62,13 @@ def custom_score(game, player):
         opp_pos = game.get_player_location(opponent)
         opp_distance = abs(my_pos[0] - opp_pos[0]) + abs(my_pos[1] - opp_pos[1])
 
-        # with open("/Users/jonieva/Projects/jorge/udacity/ia/term1/AIND-Isolation/params.txt", 'r') as f:
-        #     lines = list(f.readlines())
-        #     w_my_moves = float(lines[0])  # Weight for my moves
-        #     w_opponent_moves = float(lines[1])  # Weight for opponent moves
-        #     w_center_distance = float(lines[2])  # Weight for distance to the center of the board
-        #     w_opponent_center_distance = float(lines[3])  # Weight for opponent distance to the center of the board
-        #     w_opponent_distance = float(lines[4])  # Weight for distance to the opponent
-        #     w_chase_opponent_factor = float(lines[5])  # Extra boost. If we are in one of the opponents legal moves,
-
         # Weights for the different parameters of the heuristic.
         # They have been calculated using Spearmint (see function help for more info)
         w_my_moves = -8.82446  # Weight for my moves
         w_opponent_moves = 1.6687 # Weight for opponent moves
         w_center_distance = 7.99194  # Weight for distance to the center of the board
         w_opponent_center_distance = 8.82935  # Weight for opponent's distance to the center of the board
-        w_opponent_distance =  -9.96948     # Weight fo
+        w_opponent_distance = -9.96948     # Weight for the distance to the opponent
         w_chase_opponent_factor = -3.33862 # Extra boost used when the distance to the opponent is 3
 
         d = len(own_moves) * w_my_moves \
