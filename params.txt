@@ -1,0 +1,9 @@
+{
+    "w_chase_opponent_factor": -3.33862,
+    "w_my_moves": -8.82446,
+    "w_opponent_moves": 1.6687,
+    "w_center_distance": 7.99194,
+    "w_opponent_center_distance": 8.82935,
+    "w_opponent_distance": -9.96948,
+    "__id__": 581
+}

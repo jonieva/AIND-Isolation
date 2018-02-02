@@ -23,9 +23,10 @@ from sample_players import (RandomPlayer, open_move_score,
 from game_agent import (MinimaxPlayer, AlphaBetaPlayer, custom_score,
                         custom_score_2, custom_score_3)
 
-# NUM_MATCHES = 3  # number of matches against each opponent
-NUM_MATCHES = 10
+#NUM_MATCHES = 5  # number of matches against each opponent
+NUM_MATCHES = 5
 TIME_LIMIT = 150  # number of milliseconds before timeout
+OUTPUT_FILE = "/Users/jonieva/Projects/jorge/udacity/ia/term1/AIND-Isolation/out.txt"
 
 DESCRIPTION = """
 This script evaluates the performance of the custom_score evaluation
@@ -85,14 +86,14 @@ def play_matches(cpu_agents, test_agents, num_matches):
     total_forfeits = 0.
     total_matches = 2 * num_matches * len(cpu_agents)
 
-    print("\n{:^9}{:^13}".format("Match #", "Opponent") + ''.join(['{:^13}'.format(x[1].name) for x in enumerate(test_agents)]))
-    print("{:^9}{:^13} ".format("", "") +  ' '.join(['{:^5}| {:^5}'.format("Won", "Lost") for x in enumerate(test_agents)]))
+    # print("\n{:^9}{:^13}".format("Match #", "Opponent") + ''.join(['{:^13}'.format(x[1].name) for x in enumerate(test_agents)]))
+    # print("{:^9}{:^13} ".format("", "") +  ' '.join(['{:^5}| {:^5}'.format("Won", "Lost") for x in enumerate(test_agents)]))
 
     for idx, agent in enumerate(cpu_agents):
         wins = {key: 0 for (key, value) in test_agents}
         wins[agent.player] = 0
 
-        print("{!s:^9}{:^13}".format(idx + 1, agent.name), end="", flush=True)
+        # print("{!s:^9}{:^13}".format(idx + 1, agent.name), end="", flush=True)
 
         counts = play_round(agent, test_agents, wins, num_matches)
         total_timeouts += counts[0]
@@ -101,19 +102,19 @@ def play_matches(cpu_agents, test_agents, num_matches):
         _total = 2 * num_matches
         round_totals = sum([[wins[agent.player], _total - wins[agent.player]]
                             for agent in test_agents], [])
-        print(' ' + ' '.join([
-            '{:^5}| {:^5}'.format(
-                round_totals[i],round_totals[i+1]
-            ) for i in range(0, len(round_totals), 2)
-        ]))
+        # print(' ' + ' '.join([
+        #     '{:^5}| {:^5}'.format(
+        #         round_totals[i],round_totals[i+1]
+        #     ) for i in range(0, len(round_totals), 2)
+        # ]))
 
-    print("-" * 74)
-    print('{:^9}{:^13}'.format("", "Win Rate:") +
-        ''.join([
-            '{:^13}'.format(
-                "{:.1f}%".format(100 * total_wins[x[1].player] / total_matches)
-            ) for x in enumerate(test_agents)
-    ]))
+    # print("-" * 74)
+    # print('{:^9}{:^13}'.format("", "Win Rate:") +
+    #     ''.join([
+    #         '{:^13}'.format(
+    #             "{:.1f}%".format(100 * total_wins[x[1].player] / total_matches)
+    #         ) for x in enumerate(test_agents)
+    # ]))
 
     if total_timeouts:
         print(("\nThere were {} timeouts during the tournament -- make sure " +
@@ -123,36 +124,40 @@ def play_matches(cpu_agents, test_agents, num_matches):
     if total_forfeits:
         print(("\nYour agents forfeited {} games while there were still " +
                "legal moves available to play.\n").format(total_forfeits))
-
+    return total_wins
 
 def main():
 
     # Define two agents to compare -- these agents will play from the same
     # starting position against the same adversaries in the tournament
     test_agents = [
-        Agent(AlphaBetaPlayer(score_fn=improved_score), "AB_Improved"),
+        # Agent(AlphaBetaPlayer(score_fn=improved_score), "AB_Improved"),
         Agent(AlphaBetaPlayer(score_fn=custom_score), "AB_Custom"),
-        Agent(AlphaBetaPlayer(score_fn=custom_score_2), "AB_Custom_2"),
-        Agent(AlphaBetaPlayer(score_fn=custom_score_3), "AB_Custom_3")
+        # Agent(AlphaBetaPlayer(score_fn=custom_score_2), "AB_Custom_2"),
+        # Agent(AlphaBetaPlayer(score_fn=custom_score_3), "AB_Custom_3")
     ]
 
     # Define a collection of agents to compete against the test agents
     cpu_agents = [
-        Agent(RandomPlayer(), "Random"),
-        Agent(MinimaxPlayer(score_fn=open_move_score), "MM_Open"),
-        Agent(MinimaxPlayer(score_fn=center_score), "MM_Center"),
+        # Agent(RandomPlayer(), "Random"),
+        # Agent(MinimaxPlayer(score_fn=open_move_score), "MM_Open"),
+        # Agent(MinimaxPlayer(score_fn=center_score), "MM_Center"),
         Agent(MinimaxPlayer(score_fn=improved_score), "MM_Improved"),
         Agent(AlphaBetaPlayer(score_fn=open_move_score), "AB_Open"),
-        Agent(AlphaBetaPlayer(score_fn=center_score), "AB_Center"),
+        # Agent(AlphaBetaPlayer(score_fn=center_score), "AB_Center"),
         Agent(AlphaBetaPlayer(score_fn=improved_score), "AB_Improved")
     ]
 
-    print(DESCRIPTION)
-    print("{:^74}".format("*************************"))
-    print("{:^74}".format("Playing Matches"))
-    print("{:^74}".format("*************************"))
-    play_matches(cpu_agents, test_agents, NUM_MATCHES)
+    # print(DESCRIPTION)
+    # print("{:^74}".format("*************************"))
+    # print("{:^74}".format("Playing Matches"))
+    # print("{:^74}".format("*************************"))
+    total_wins = play_matches(cpu_agents, test_agents, NUM_MATCHES)
 
+    total_wins = total_wins[test_agents[0].player] / (len(cpu_agents) * NUM_MATCHES * 2.0)     # This is the score function
+
+    with open(OUTPUT_FILE, "w") as f:
+        f.write(str(total_wins))
 
 if __name__ == "__main__":
     main()

@@ -8,14 +8,28 @@ class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
     pass
 
+# import json
+# with open("/Users/jonieva/Projects/jorge/udacity/ia/term1/AIND-Isolation/params.txt", 'r') as f:
+#     parameters_dict = json.loads(f.read())
+#     w_my_moves = parameters_dict['w_my_moves']
+#     w_opponent_moves = parameters_dict['w_opponent_moves']
+#     w_center_distance = parameters_dict['w_center_distance']
+#     w_opponent_center_distance = parameters_dict['w_opponent_center_distance']
+#     w_opponent_distance = parameters_dict['w_opponent_distance']
+#     w_chase_opponent_factor = parameters_dict['w_chase_opponent_factor']
+
+
 def custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
 
-    This should be the best heuristic function for your project submission.
+    Similar to custom_score_2, but the weights for the parameters have been
+    estimated empirically using a bayesian method for parameters optimization called Spearmint.
 
-    Note: this function should be called from within a Player instance as
-    `self.score()` -- you should not need to call this function directly.
+    Note that some weights have a negative value. These values kind of contradict their
+    original thought, but they have been kept to respect the Spearmint output.
+
+    See https://github.com/HIPS/Spearmint and the heurisic analysis document for additional info.
 
     Parameters
     ----------
@@ -34,7 +48,8 @@ def custom_score(game, player):
     """
     own_moves = game.get_legal_moves()
     if len(own_moves) == 0:
-        # terminal state
+        # terminal state. We don't use the Isolation.Board builtin functions for the sake of
+        # efficiency (no need to recalculate the list of legal moves)
         if player == game.active_player:
             # player looses
             return -INF
@@ -42,19 +57,66 @@ def custom_score(game, player):
             # player wins
             return INF
     else:
-        # We just return the number of moves that we have
-        opp_moves = game.get_legal_moves(game.get_opponent(player))
-        return float(len(own_moves) - len(opp_moves))
+        opponent = game.get_opponent(player)
+        opp_moves = game.get_legal_moves(opponent)
+        # Distance to the center of the board
+        w, h = game.width / 2., game.height / 2.
+        my_y, my_x = game.get_player_location(player)
+        center_distance = abs(h - my_y) + abs(w - my_x)
+        # Opponent distance to the center
+        opp_y, opp_x = game.get_player_location(opponent)
+        opp_center_distance = abs(h - opp_y) + abs(w - opp_x)
 
+        # Distance to the opponent (from a purely geometric point of view, other types of distances could be tested)
+        my_pos = game.get_player_location(player)
+        opp_pos = game.get_player_location(opponent)
+        opp_distance = abs(my_pos[0] - opp_pos[0]) + abs(my_pos[1] - opp_pos[1])
 
+        # with open("/Users/jonieva/Projects/jorge/udacity/ia/term1/AIND-Isolation/params.txt", 'r') as f:
+        #     lines = list(f.readlines())
+        #     w_my_moves = float(lines[0])  # Weight for my moves
+        #     w_opponent_moves = float(lines[1])  # Weight for opponent moves
+        #     w_center_distance = float(lines[2])  # Weight for distance to the center of the board
+        #     w_opponent_center_distance = float(lines[3])  # Weight for opponent distance to the center of the board
+        #     w_opponent_distance = float(lines[4])  # Weight for distance to the opponent
+        #     w_chase_opponent_factor = float(lines[5])  # Extra boost. If we are in one of the opponents legal moves,
 
+        # Weights for the different parameters of the heuristic.
+        # They have been calculated using Spearmint (see function help for more info)
+        w_my_moves = -8.82446  # Weight for my moves
+        w_opponent_moves = 1.6687 # Weight for opponent moves
+        w_center_distance = 7.99194  # Weight for distance to the center of the board
+        w_opponent_center_distance = 8.82935  # Weight for opponent's distance to the center of the board
+        w_opponent_distance =  -9.96948     # Weight fo
+        w_chase_opponent_factor = -3.33862 # Extra boost used when the distance to the opponent is 3
+
+        d = len(own_moves) * w_my_moves \
+            - len(opp_moves) * w_opponent_moves \
+            - center_distance * w_center_distance \
+            + opp_center_distance * w_opponent_center_distance \
+            - opp_distance * w_opponent_distance
+
+        opp_distance = abs(my_y - opp_y) + abs(my_x - opp_x)
+        if opp_distance == 3:
+            # This would have been one of the legal options of the opponent. Extra boost
+            d += w_chase_opponent_factor
+
+        return d
 
 def custom_score_2(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
 
-    Note: this function should be called from within a Player instance as
-    `self.score()` -- you should not need to call this function directly.
+    This heuristic is based on a weighted sum of several components.
+    Positive components:
+        - Number of legal movements available for the given player
+        - Distance to the center of the board for the given player
+        - Extra boost when the distance of the given player to its opponent is exactly 3.
+          In this condition is matched, the opponent legal movements are reduced by one, and
+          the given player is in a good place to "harass" the opponent.
+    Negative components:
+        - Number of legal movements available for the opponent player
+        - Distance to the center of the board for the opponent player
 
     Parameters
     ----------
@@ -71,24 +133,51 @@ def custom_score_2(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    if game.is_loser(player):
-        return float("-inf")
+    own_moves = game.get_legal_moves()
+    if len(own_moves) == 0:
+        # terminal state. We don't use the Isolation.Board builtin functions for the sake of
+        # efficiency (no need to recalculate the list of legal moves)
+        if player == game.active_player:
+            # player looses
+            return -INF
+        else:
+            # player wins
+            return INF
+    else:
+        opponent = game.get_opponent(player)
+        opp_moves = game.get_legal_moves(opponent)
+        w, h = game.width / 2., game.height / 2.
+        my_y, my_x = game.get_player_location(player)
+        my_center_distance = abs(h - my_y) + abs(w - my_x)
+        opp_y, opp_x = game.get_player_location(opponent)
+        opp_center_distance = abs(h - opp_y) + abs(w - opp_x)
 
-    if game.is_winner(player):
-        return float("inf")
+        # Weight for the different parameters (see function help for a full explanation)
+        w_my_moves = 1.5             # Weight for my moves
+        w_opponent_moves = 1.0       # Weight for opponent moves
+        w_center = 0.2               # Weight for distance to the center
+        w_chase_opponent_factor = 1.5   # Extra boost.
 
-    w, h = game.width / 2., game.height / 2.
-    y, x = game.get_player_location(player)
-    return float((h - y)**2 + (w - x)**2)
+        # Metric value
+        d = len(own_moves) * w_my_moves \
+            - len(opp_moves) * w_opponent_moves \
+            - my_center_distance * w_center \
+            + opp_center_distance * w_center
 
+        # Calculate the distance of the player to the opponent.
+        opp_distance = abs(my_y - opp_y) + abs(my_x - opp_x)
+        if opp_distance == 3:
+            # Extra boost (see function help for a full explanation)
+            d += w_chase_opponent_factor
+        return d
 
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
 
-    Note: this function should be called from within a Player instance as
-    `self.score()` -- you should not need to call this function directly.
+    This heuristic is only based only in the number of moves remaining for the active player
+    and its opponent, and it's the simplest one of the three proposed.
+    Both numbers are weighted differently
 
     Parameters
     ----------
@@ -105,9 +194,22 @@ def custom_score_3(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    own_moves = game.get_legal_moves()
+    if len(own_moves) == 0:
+        # terminal state. We don't use the Isolation.Board builtin functions for the sake of
+        # efficiency (no need to recalculate the list of legal moves)
+        if player == game.active_player:
+            # player looses
+            return -INF
+        else:
+            # player wins
+            return INF
+    else:
+        opp_moves = game.get_legal_moves(game.get_opponent(player))
+        w_my_moves = 1.5
+        w_opponent_moves = 1.0
 
+        return len(own_moves) * w_my_moves - len(opp_moves) * w_opponent_moves
 
 class IsolationPlayer:
     """Base class for minimax and alphabeta agents -- this class is never
@@ -131,7 +233,7 @@ class IsolationPlayer:
         positive value large enough to allow the function to return before the
         timer expires.
     """
-    def __init__(self, search_depth=3, score_fn=custom_score, timeout=10.):
+    def __init__(self, search_depth=3, score_fn=custom_score, timeout=25.):
         self.search_depth = search_depth
         self.score = score_fn
         self.time_left = None
@@ -234,7 +336,7 @@ class MinimaxPlayer(IsolationPlayer):
         legal_moves = game.get_legal_moves()
 
         best_score = -INF
-        best_move = (-1, -1)
+        best_move = (-1, -1) if len(legal_moves) == 0 else legal_moves[0]
         for move in legal_moves:
             score = self.min_value(game.forecast_move(move), depth-1)
             if score > best_score:
@@ -265,15 +367,16 @@ class MinimaxPlayer(IsolationPlayer):
 
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
+
         if depth == 0:
-            # Stop here
+            # Stop here. Evaluate the state of the board
             return self.score(game, self)
 
         legal_moves = game.get_legal_moves()
         num_moves = len(legal_moves)
         if num_moves == 0:
             # Terminal state. Should evaluate to -INF
-            return self.score(game, self)
+            return game.utility(self)
 
         v = INF
         for move in legal_moves:
@@ -305,13 +408,13 @@ class MinimaxPlayer(IsolationPlayer):
             raise SearchTimeout()
 
         if depth == 0:
-            # Stop here
+            # Stop here. Evaluate the state of the board
             return self.score(game, self)
 
         legal_moves = game.get_legal_moves()
         if len(legal_moves) == 0:
-            # Terminal state. Should evaluate to INF
-            return self.score(game, self)
+            #  Terminal state
+            return game.utility(self)
 
         v = -INF
         for move in legal_moves:
@@ -359,8 +462,10 @@ class AlphaBetaPlayer(IsolationPlayer):
 
         # Initialize the best move so that this function returns something
         # in case the search fails due to timeout
-        # legal_moves = [(1, 2), (1, 4), (2, 1), (5, 4), (2, 5), (4, 5), (5, 2)]
         best_move = (-1, -1)
+        legal_moves = game.get_legal_moves(self)
+        if len(legal_moves) > 0:
+            best_move = legal_moves[0]
         try:
             depth = 1
             while True:
@@ -425,6 +530,7 @@ class AlphaBetaPlayer(IsolationPlayer):
         # of four moves anytime)
         legal_moves = game.get_legal_moves()
         best_score = -INF
+        # Pick a best move != (-1, -1) to avoid forfeit
         best_move = (-1, -1) if len(legal_moves) == 0 else legal_moves[0]
         for move in legal_moves:
             score = self.min_value(game.forecast_move(move), depth-1, alpha, beta)
@@ -470,7 +576,7 @@ class AlphaBetaPlayer(IsolationPlayer):
         legal_moves = game.get_legal_moves()
         if len(legal_moves) == 0:
             # Terminal state. Should evaluate to -INF
-            return self.score(game, self)
+            return game.utility(self)
 
         v = INF
         # try:
@@ -517,7 +623,7 @@ class AlphaBetaPlayer(IsolationPlayer):
         # legal_moves = [(3,5), (4,4)]
         if len(legal_moves) == 0:
             # Terminal state. Should evaluate to INF
-            return self.score(game, self)
+            return game.utility(self)
 
         v = -INF
         # try:
